@@ -57,16 +57,23 @@ def connect_and_listen(host="127.0.0.1", port=5000):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 sock.connect((host, port))
                 Logger.info(f"Connected to {host}:{port}")
+                loop_thread = threading.Thread(target=_trigger_client_loop_event)
+                loop_thread.start()
                 while True:
                     data = sock.recv(8192)
                     if not data:
                         Logger.info("Disconnected.")
                         break
                     _handle_recv_package(data.decode(), sock)
+                loop_thread.join()
         except (ConnectionRefusedError, ConnectionResetError) as e:
             print(f"Connection error: {e}. Retrying in 5 seconds...")
             time.sleep(5)
 
+def _trigger_client_loop_event():
+    while True:
+        _trigger_event("loop")
+        time.sleep(1)
 
 def on(event, handler=None):
     """Register an event handler.
